@@ -1,49 +1,83 @@
-import fs, {writeFile} from 'fs';
+import fs, {
+    writeFile
+} from 'fs';
+import {
+    createHeader
+} from './header';
+import {
+    createPortfolio
+} from './portfolio';
+import Chance from 'chance';
 
-const numberOfPortfolios = 200;
+let chance = new Chance();
+const numberOfPortfolios = 1500;
 
-const numberOfInvestments = 300;
-
-const numberOfLots = 10;
-
-const createHeader = () => {
-    const header = 
-    {
-        header: {
-            field2: "abcd",
-            otherField: "2015-11-22",
-            otherHeader: "test"
-        }
-    };  
-    return header;
-};
-
-
-const createPortfolio = () => {
-    const portfolio =
-    {
-        asofDate: (new Date()).toISOString(),
-        portfolioId: 12,
-        accountingBasis: 1
-    };
-
-    return portfolio;
-};
 
 const createPositions = () => {
 
+    let portfolios = generatePortfolios();
     let fullPositions = createHeader();
-
     fullPositions.portfolios = [];
 
+    portfolios.forEach((portfolioId) => {
+        fullPositions.portfolios.push(createPortfolio(portfolioId));
+    });
 
-    for (let x = 0; x <= numberOfPortfolios; x++ ) {
-        fullPositions.portfolios.push(createPortfolio());
-    }
-    
     return JSON.stringify(fullPositions);
 };
 
-writeFile("genereated_files/test.txt", createPositions(), () => {console.log("file written");});
+
+const generatePortfolios = () => {
+    let portfolioList = [];
+    for (let i = 0, portfolio = 1; i <= numberOfPortfolios; i++) {
+        portfolio += chance.natural({
+            min: 1,
+            max: 10
+        });
+        portfolioList.push(portfolio);
+    }
+
+    return portfolioList;
+};
 
 
+const deleteFolderRecursive = (path) => {
+    if (fs.existsSync(path)) {
+        fs.readdirSync(path).forEach(function (file, index) {
+            var curPath = path + "/" + file;
+            if (fs.lstatSync(curPath).isDirectory()) { // recurse
+                deleteFolderRecursive(curPath);
+            } else { // delete file
+                fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(path);
+    }
+};
+
+
+const generateFiles = () => {
+
+    deleteFolderRecursive('generated_files');
+    fs.mkdir('generated_files');
+
+    let portfolios = generatePortfolios();
+
+    portfolios.forEach((portfolioId) => {
+        let fullPositions = createHeader();
+        fullPositions.portfolios = [];
+        fullPositions.portfolios.push(createPortfolio(portfolioId));
+
+        writeFile("generated_files/" + portfolioId.toString() + ".txt", JSON.stringify(fullPositions), (err) => {
+            if (err) {
+                console.log(err);
+            }
+            console.log("file written");
+        });
+    });
+
+};
+
+
+
+generateFiles();
