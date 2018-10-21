@@ -1,13 +1,13 @@
 import {
     v4
 } from 'uuid';
+import moment from 'moment';
 
 export const createHeader = () => {
     const header = {
         header: {
-            generatedDateTime: (new Date()).toISOString(),
-            messageId: v4(),
-            otherHeader: "test"
+            generatedDateTime: moment().format('YYYY-MM-DD hh:mm:ss'),
+            messageId: v4()
         }
     };
     return header;

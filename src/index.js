@@ -2,15 +2,21 @@ import fs, {
     writeFile
 } from 'fs';
 import {
+    createGzip
+} from 'zlib';
+import {
     createHeader
 } from './header';
 import {
     createPortfolio
 } from './portfolio';
+import {
+    each
+} from 'async';
 import Chance from 'chance';
 
 let chance = new Chance();
-const numberOfPortfolios = 1500;
+const numberOfPortfolios = 300;
 
 
 const createPositions = () => {
@@ -59,22 +65,37 @@ const deleteFolderRecursive = (path) => {
 const generateFiles = () => {
 
     deleteFolderRecursive('generated_files');
-    fs.mkdir('generated_files');
+    fs.mkdir('generated_files', (err) => {
+        if (err) {
+            console.log(err);
+        }
+    });
 
     let portfolios = generatePortfolios();
 
-    portfolios.forEach((portfolioId) => {
-        let fullPositions = createHeader();
-        fullPositions.portfolios = [];
-        fullPositions.portfolios.push(createPortfolio(portfolioId));
+    each(portfolios, (portfolioId, callback) => {
+            let fullPositions = createHeader();
+            fullPositions.portfolios = [];
+            fullPositions.portfolios.push(createPortfolio(portfolioId));
 
-        writeFile("generated_files/" + portfolioId.toString() + ".txt", JSON.stringify(fullPositions), (err) => {
-            if (err) {
-                console.log(err);
-            }
-            console.log("file written");
+            let gzip = createGzip();
+            let out = fs.createWriteStream('generated_files/' + portfolioId.toString() + '.txt.gz');
+            gzip.pipe(out);
+
+            gzip.write(JSON.stringify(fullPositions));
+
+            gzip.end();
+
+            // writeFile("generated_files/" + portfolioId.toString() + ".txt", JSON.stringify(fullPositions), (err) => {
+            //     if (err) {
+            //         callback(err);
+            //     }
+            //     callback();
+            // });
+        },
+        (err) => {
+            console.log(err);
         });
-    });
 
 };
 
